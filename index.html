@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiempo de condena</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 30px;
+    }
+    #time {
+      font-size: 6em;
+      margin-bottom: 30px;
+      color: #00ff00;
+      font-weight: bold;
+      text-shadow: 2px 2px #003300;
+    }
+    button, input {
+      padding: 10px;
+      font-size: 1em;
+      margin: 5px;
+    }
+    .config {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tiempo de condena del Rex</h1>
+  <div id="time">00:00:00</div>
+
+  <div>
+    <input type="number" id="startMinutes" placeholder="Minutos iniciales" min="1">
+    <button id="startBtn">▶️ Iniciar</button>
+  </div>
+
+  <div class="config">
+    <h3>Crea los botones pa añadir tiempo</h3>
+    <input type="number" id="add1" placeholder="Botón 1 (segundos)" />
+    <input type="number" id="add2" placeholder="Botón 2 (segundos)" />
+    <input type="number" id="add3" placeholder="Botón 3 (segundos)" />
+    <button id="saveButtons">💾 Guardar botones</button>
+  </div>
+
+  <div id="addButtonsContainer"></div>
+
+  <button id="resetBtn">🔄 Reiniciar el contador para estafar a los uricrornios</button>
+
+  <script>
+    let seconds = 0;
+    let interval;
+    let saveCounter = 0;
+
+    const timeDisplay = document.getElementById("time");
+
+    function formatTime(s) {
+      const hrs = String(Math.floor(s / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    }
+
+    function updateDisplay() {
+      timeDisplay.textContent = formatTime(seconds);
+    }
+
+    function saveTime() {
+      localStorage.setItem("countdownTime", seconds);
+    }
+
+    function startTimer() {
+      if (interval) clearInterval(interval);
+      interval = setInterval(() => {
+        if (seconds > 0) {
+          seconds--;
+          updateDisplay();
+          saveCounter++;
+          if (saveCounter >= 5) {
+            saveTime();
+            saveCounter = 0;
+          }
+        } else {
+          clearInterval(interval);
+          alert("Eres libre (NO)");
+        }
+      }, 1000);
+    }
+
+    function createAddButtons(values) {
+      const container = document.getElementById("addButtonsContainer");
+      container.innerHTML = ""; // Limpiar anteriores
+      values.forEach(val => {
+        if (val && !isNaN(val)) {
+          const btn = document.createElement("button");
+          btn.textContent = `+${val}s`;
+          btn.addEventListener("click", () => {
+            seconds += parseInt(val);
+            updateDisplay();
+            saveTime();
+          });
+          container.appendChild(btn);
+        }
+      });
+    }
+
+    // Guardar configuración de botones
+    document.getElementById("saveButtons").addEventListener("click", () => {
+      const values = [
+        parseInt(document.getElementById("add1").value),
+        parseInt(document.getElementById("add2").value),
+        parseInt(document.getElementById("add3").value)
+      ].filter(v => !isNaN(v));
+
+      localStorage.setItem("addButtonValues", JSON.stringify(values));
+      createAddButtons(values);
+    });
+
+    // Botón iniciar
+    document.getElementById("startBtn").addEventListener("click", () => {
+      const mins = parseInt(document.getElementById("startMinutes").value);
+      if (isNaN(mins) || mins <= 0) {
+        alert("Ingresa un número válido de minutos.");
+        return;
+      }
+      seconds = mins * 60;
+      saveTime();
+      updateDisplay();
+      startTimer();
+    });
+
+    // Reset
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (confirm("¿Reiniciar contador?")) {
+        clearInterval(interval);
+        seconds = 0;
+        localStorage.removeItem("countdownTime");
+        updateDisplay();
+      }
+    });
+
+    // Al cargar
+    if (localStorage.getItem("countdownTime")) {
+      seconds = parseInt(localStorage.getItem("countdownTime"));
+      if (seconds > 0) {
+        updateDisplay();
+        startTimer();
+      }
+    }
+
+    if (localStorage.getItem("addButtonValues")) {
+      const values = JSON.parse(localStorage.getItem("addButtonValues"));
+      createAddButtons(values);
+
+      // También cargamos los valores en los inputs
+      if (values[0]) document.getElementById("add1").value = values[0];
+      if (values[1]) document.getElementById("add2").value = values[1];
+      if (values[2]) document.getElementById("add3").value = values[2];
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>
